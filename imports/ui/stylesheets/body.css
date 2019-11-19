@@ -1,0 +1,8 @@
+.code{
+  font-family: monospace;
+  font-size: 1.2em;
+  background: #f0f0f0;
+  border: solid 1px #ccc;
+  word-break: break-all;
+  padding: 1em;
+}
