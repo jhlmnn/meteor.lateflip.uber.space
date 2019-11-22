@@ -5,15 +5,11 @@ import { Session } from 'meteor/session';
 
 curl -X PUT \
   https://api.playground.openbanking.klarna.com/xs2a/v1/sessions \
-  -H 'Authorization: Bearer MTU4MzI3ODAxMHx8fGYyNjMxZTE1LTQ5MzQtNDkwYy05OGFiLTYwOWVjMDRhN2FkMXx8fDExMjV8fHxyaXZlcmJhbmsuKg==.0/t4uoDqwv+JjN55BKrVuwZfjtelRXopzY+YXPhBAmw=' \
   -H 'Cache-Control: no-cache' \
   -H 'Connection: keep-alive' \
   -H 'Content-Length: 491' \
   -H 'Content-Type: application/json' \
-  -H 'Cookie: kdid=1f88369f-a0d8-48fd-82c9-74adf7a2edd3' \
   -H 'Host: api.playground.openbanking.klarna.com' \
-  -H 'Postman-Token: 20d64789-fe95-4764-80be-ebbec1e528d4,b2e1a44c-c178-4608-a1f3-02e80063541e' \
-  -H 'User-Agent: PostmanRuntime/7.19.0' \
   -H 'cache-control: no-cache' \
   -d '{
     "_language": "en",
@@ -42,17 +38,46 @@ curl -X PUT \
 Meteor.methods({
   'kob.start_session'() {
     try {
-      let result = HTTP.call(
+      let
+        token = Meteor.settings.kob.token,
+        result = HTTP.call(
         'PUT',
         'https://api.playground.openbanking.klarna.com/xs2a/v1/sessions',
         {
           headers: {
             "Accept": "*/*",
-            "Authorization": "Bearer MTU4MzI3ODAxMHx8fGYyNjMxZTE1LTQ5MzQtNDkwYy05OGFiLTYwOWVjMDRhN2FkMXx8fDExMjV8fHxyaXZlcmJhbmsuKg==.0/t4uoDqwv+JjN55BKrVuwZfjtelRXopzY+YXPhBAmw=",
+            "Authorization": "Bearer " + token,
             "Content-Type": "application/json"
           }
         }
       );
+      /*
+
+      HTTP 201 Created
+      {
+          "data": {
+              "session_id": "9h92js1pv4uogde8nphcfrovr3qc9krc",
+              "session_id_short": "9H92JSPV",
+              "flows": {
+                  "balances": "https://api.playground.openbanking.klarna.com/xs2a/v1/sessions/9h92js1pv4uogde8nphcfrovr3qc9krc/flows/balances",
+                  "transfer": "https://api.playground.openbanking.klarna.com/xs2a/v1/sessions/9h92js1pv4uogde8nphcfrovr3qc9krc/flows/transfer",
+                  "account_details": "https://api.playground.openbanking.klarna.com/xs2a/v1/sessions/9h92js1pv4uogde8nphcfrovr3qc9krc/flows/account-details",
+                  "accounts": "https://api.playground.openbanking.klarna.com/xs2a/v1/sessions/9h92js1pv4uogde8nphcfrovr3qc9krc/flows/accounts",
+                  "transactions": "https://api.playground.openbanking.klarna.com/xs2a/v1/sessions/9h92js1pv4uogde8nphcfrovr3qc9krc/flows/transactions"
+              },
+              "self": "https://api.playground.openbanking.klarna.com/xs2a/v1/sessions/9h92js1pv4uogde8nphcfrovr3qc9krc"
+          }
+      }
+
+      HTTP 400 Bad request
+      {
+          "error": {
+              "code": "badRequest",
+              "message": "Selected bank not allowed for this user"
+          }
+      }
+
+      */
 
       if (result.statusCode == 201){
         let
@@ -60,15 +85,23 @@ Meteor.methods({
         //console.log("KOB session_id: "+sessionId);
         return sessionId;
       }
+      if (result.statusCode == 400){
+        let
+          errorCode = result.data.error.code,
+          errorMessage = result.data.error.message;
+        Meteor.Error("Session initialisation failed","Session could not be initialised. Response from API:\n" + errorCode + "\n" + errorMessage );
+      }
       // Error return
       return -1;
     } catch(e) {
       throw(e);
-    } 
+    }
   },
   'kob.accounts'() {
     try {
-      let sessionId = Meteor.call('kob.start_session');
+      let
+        sessionId = Meteor.call('kob.start_session'),
+        token = Meteor.settings.kob.token;
       
       result = HTTP.call(
         'PUT',
@@ -76,7 +109,7 @@ Meteor.methods({
         {
           headers: {
             "Accept": "*/*",
-            "Authorization": "Bearer MTU4MzI3ODAxMHx8fGYyNjMxZTE1LTQ5MzQtNDkwYy05OGFiLTYwOWVjMDRhN2FkMXx8fDExMjV8fHxyaXZlcmJhbmsuKg==.0/t4uoDqwv+JjN55BKrVuwZfjtelRXopzY+YXPhBAmw=",
+            "Authorization": "Bearer " + token,
             "Content-Type": "application/json"
           }
         }
