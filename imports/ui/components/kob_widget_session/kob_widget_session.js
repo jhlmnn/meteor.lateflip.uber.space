@@ -50,16 +50,25 @@ Template.kob_widget_session.events({
   'click button'(event, instance) {
     try {
       //
-      Meteor.call('kob.accounts', (error,result) => {
-        instance.session_id.set(result.session_id);
-        instance.client_token.set(result.client_token);
-        // override parts of the configuration just for this flow
-        window.XS2A.startFlow(
-          instance.client_token.get(),
-          {
-            onLoad: () => { console.log('onLoad called #2') }
-          }
-        );
+      Meteor.call('kob.start_session', Session.get("client_id"), (error,result) => {
+        let
+          KOB_sessionId = result;
+        console.log(KOB_sessionId);
+        instance.session_id.set(KOB_sessionId);
+        //
+        // Start accounts flow
+        //
+        Meteor.call('kob.start_flow',Session.get("client_id"),KOB_sessionId,'accounts', (error,result) => {
+          console.log(result);
+          instance.client_token.set(result.client_token);
+          // override parts of the configuration just for this flow
+          /*window.XS2A.startFlow(
+            instance.client_token.get(),
+            {
+              onLoad: () => { console.log('onLoad called #2') }
+            }
+          );*/
+        });
       });
     } catch (e) {
       console.log(e);
