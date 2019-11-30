@@ -1,8 +1,9 @@
 //
+import { Meteor } from 'meteor/meteor';
 import { HTTP } from 'meteor/http';
 import { Session } from 'meteor/session';
-import { KOBSessions } from './kob_sessions.collections.js';
-import { Meteor } from 'meteor/meteor';
+import { KOBSessions } from './kob_sessions.collection.js';
+import { KOBFlows } from './kob_flows.collection.js';
 
 const session_life_time_seconds = 60 * 30; // 30 minutes
 
