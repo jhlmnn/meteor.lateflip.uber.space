@@ -4,6 +4,7 @@ import '../../stylesheets/body.css';
 Template.kob_widget_session.onCreated(function kob_widget_sessionOnCreated() {
   this.session_id = new ReactiveVar('(no session available)');
   this.client_token = new ReactiveVar('(no session available)');
+  this.kob_session = new ReactiveVar('No session active');
   //
   //
   //
@@ -38,28 +39,50 @@ Template.kob_widget_session.onCreated(function kob_widget_sessionOnCreated() {
 });
 
 Template.kob_widget_session.helpers({
-  session_id() {
+  client_id(){
+    return Session.get("client_id");
+  },
+  session_id(){
     return Template.instance().session_id.get();
   },
-  client_token() {
+  client_token(){
     return Template.instance().client_token.get();
+  },
+  kob_session(){
+    return Template.instance().kob_session.get();
   }
 });
 
 Template.kob_widget_session.events({
-  'click button'(event, instance) {
+  'click button.reset_client'(event,instance){
+    localStorage.removeItem("client_id");
+    Session.set("client_id","");
+  },
+  'click button.kob_session'(event, instance) {
     try {
       //
-      Meteor.call('kob.start_session', Session.get("client_id"), (error,result) => {
+      Meteor.call('kob.start_session',Session.get("client_id"), (error,result) => {
         let
-          KOB_sessionId = result;
-        console.log(KOB_sessionId);
+          KOB_sessionObject = result;
+          KOB_sessionId = result.session_id;
+        //
+        console.log(result);
+        //
+        instance.kob_session.set(KOB_sessionObject);
         instance.session_id.set(KOB_sessionId);
         //
         // Start accounts flow
         //
         Meteor.call('kob.start_flow',Session.get("client_id"),KOB_sessionId,'accounts', (error,result) => {
-          console.log(result);
+          /*
+          sessionObject {
+            "client_id": client_id,
+            "session_id": sessionId,
+            "session_id_short": result.data.data.session_id_short,
+            "flows": Object.keys(result.data.data.flows),
+            "created_at": (new Date()).getTime()
+          }
+          */
           instance.client_token.set(result.client_token);
           // override parts of the configuration just for this flow
           /*window.XS2A.startFlow(

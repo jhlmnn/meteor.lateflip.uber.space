@@ -1,6 +1,6 @@
 import { HTTP } from 'meteor/http';
 import { Session } from 'meteor/session';
-import { ClientSessions } from './client_sessions.collections.js';
+import { ClientSessions } from './client_sessions.collection.js';
 
 Meteor.methods({
   'client_sessions.start_session'() {

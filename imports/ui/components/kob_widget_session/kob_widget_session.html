@@ -1,5 +1,14 @@
 <template name="kob_widget_session">
-  <button>Start KOB Widget</button>
+  <button class="kob_session">Start KOB Session</button>
+  <button class="kob_flow">Start KOB Flow</button>
+  <select>
+    {{#each flow in kob_session.flows}}
+    <option value="{{flow}}">{{flow}}</option>
+    {{/each}}
+  </select>
+  <button class="reset_client">Reset client id</button>
+  <p>Client ID:</p>
+  <div class="code">{{client_id}}</div>
   <p>KOB session_id:</p>
   <div class="code">{{session_id}}</div>
   <p>KOB client_token:</p>

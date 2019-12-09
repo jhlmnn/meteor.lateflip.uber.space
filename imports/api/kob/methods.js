@@ -113,18 +113,20 @@ Meteor.methods({
         if (result.statusCode == 201){
           // Success
           let
-            sessionId = result.data.data.session_id;
-          KOBSessions.insert({
-            "client_id": client_id,
-            "session_id": sessionId,
-            "session_id_short": result.data.data.session_id_short,
-            "flows": Object.keys(result.data.data.flows),
-            "created_at": (new Date()).getTime()
-          });
+            sessionId = result.data.data.session_id,
+            sessionObject = {
+              "client_id": client_id,
+              "session_id": sessionId,
+              "session_id_short": result.data.data.session_id_short,
+              "flows": Object.keys(result.data.data.flows),
+              "created_at": (new Date()).getTime()
+            };
+          //
+          KOBSessions.insert(sessionObject);
           //
           console.debug("KOBSessions method kob.start_session: " + sessionId );
           //
-          return sessionId;
+          return sessionObject;
         }
         if (result.statusCode == 400){
           // Error
@@ -142,7 +144,7 @@ Meteor.methods({
       //
       console.debug("KOBSessions method kob.start_session: "+activeSessions.count()+" active sessions found." );
       //
-      return activeSessions.fetch()[0].session_id;
+      return activeSessions.fetch()[0];
     }
   },
   'kob.start_flow'(client_id,session_id,flow) {
