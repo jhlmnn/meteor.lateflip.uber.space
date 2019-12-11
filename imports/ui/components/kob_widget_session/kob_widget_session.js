@@ -4,7 +4,7 @@ import '../../stylesheets/body.css';
 Template.kob_widget_session.onCreated(function kob_widget_sessionOnCreated() {
   this.session_id = new ReactiveVar('(no session available)');
   this.client_token = new ReactiveVar('(no session available)');
-  this.kob_session = new ReactiveVar('No session active');
+  this.kob_session = new ReactiveVar('(no session available)');
   //
   //
   //
@@ -59,8 +59,8 @@ Template.kob_widget_session.events({
     Session.set("client_id","");
   },
   'click button.kob_session'(event, instance) {
+    //
     try {
-      //
       Meteor.call('kob.start_session',Session.get("client_id"), (error,result) => {
         let
           KOB_sessionObject = result;
@@ -70,31 +70,49 @@ Template.kob_widget_session.events({
         //
         instance.kob_session.set(KOB_sessionObject);
         instance.session_id.set(KOB_sessionId);
+      });
+    } catch (e) {
+      //
+      console.log(e);
+      //
+    }
+    //
+  },
+  'click button.kob_flow'(event, instance) {
+    //
+    let
+      KOB_sessionId = instance.kob_session.get(),
+      KOB_flow = Session.get("selected_flow");
+    //
+    if (KOB_flow==undefined){
+      // No flow selected
+    }
+    //
+    try {
+      //
+      // Start flow
+      //
+      Meteor.call('kob.start_flow',Session.get("client_id"),KOB_sessionId,KOB_flow, (error,result) => {
+        let
+          KOB_sessionObject = result;
+          KOB_sessionId = result.session_id;
         //
-        // Start accounts flow
+        console.log(result);
         //
-        Meteor.call('kob.start_flow',Session.get("client_id"),KOB_sessionId,'accounts', (error,result) => {
-          /*
-          sessionObject {
-            "client_id": client_id,
-            "session_id": sessionId,
-            "session_id_short": result.data.data.session_id_short,
-            "flows": Object.keys(result.data.data.flows),
-            "created_at": (new Date()).getTime()
+        instance.client_token.set(result.client_token);
+        // override parts of the configuration just for this flow
+        /*window.XS2A.startFlow(
+          instance.client_token.get(),
+          {
+            onLoad: () => { console.log('onLoad called #2') }
           }
-          */
-          instance.client_token.set(result.client_token);
-          // override parts of the configuration just for this flow
-          /*window.XS2A.startFlow(
-            instance.client_token.get(),
-            {
-              onLoad: () => { console.log('onLoad called #2') }
-            }
-          );*/
-        });
+        );*/
       });
     } catch (e) {
       console.log(e);
     }
   },
+  'change select[name="flow"]'(event,instance){
+    Session.set("selected_flow",event.target.value);
+  }
 });

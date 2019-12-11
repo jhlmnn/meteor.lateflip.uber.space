@@ -1,7 +1,7 @@
 <template name="kob_widget_session">
   <button class="kob_session">Start KOB Session</button>
   <button class="kob_flow">Start KOB Flow</button>
-  <select>
+  <select name="flow">
     {{#each flow in kob_session.flows}}
     <option value="{{flow}}">{{flow}}</option>
     {{/each}}

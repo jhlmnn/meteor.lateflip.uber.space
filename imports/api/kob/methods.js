@@ -178,6 +178,7 @@ Meteor.methods({
         if (result.statusCode == 201){
           return {
             'session_id': session_id,
+            'flow_id': result.data.data.flow_id,
             'client_token': result.data.data.client_token
           };
         } else {
