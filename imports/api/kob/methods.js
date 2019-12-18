@@ -2,81 +2,23 @@
 import { Meteor } from 'meteor/meteor';
 import { HTTP } from 'meteor/http';
 import { Session } from 'meteor/session';
-import { KOBSessions } from './kob_sessions.collection.js';
-import { KOBFlows } from './kob_flows.collection.js';
+import { KOBSessions, findActiveSessions, findActiveSessionById } from './kob_sessions.collection.js';
+import { KOBFlows, findActiveFlow } from './kob_flows.collection.js';
 
-const session_life_time_seconds = 60 * 30; // 30 minutes
-
-function findActiveSessions(client_id){
-  //
-  console.debug("findActiveSessions client_id:" + client_id);
-  //
-  return KOBSessions.find({
-    'client_id': client_id,
-    // created_at > (now - session_life_time_seconds)
-    'created_at': { $gt: (new Date()).getTime() - (1000 * session_life_time_seconds) }
-  });
-}
-
-function findActiveSessionById(client_id,session_id){
-  //
-  console.debug("findActiveSessionById client_id:" + client_id + " session_id:" + session_id);
-  //
-  return KOBSessions.findOne({
-    'client_id': client_id,
-    'session_id': session_id,
-    // created_at > (now - session_life_time_seconds)
-    'created_at': { $gt: (new Date()).getTime() - (1000 * session_life_time_seconds) }
-  });
-}
-
-/*
-
-curl -X PUT \
-  https://api.playground.openbanking.klarna.com/xs2a/v1/sessions \
-  -H 'Cache-Control: no-cache' \
-  -H 'Connection: keep-alive' \
-  -H 'Content-Length: 491' \
-  -H 'Content-Type: application/json' \
-  -H 'Host: api.playground.openbanking.klarna.com' \
-  -H 'cache-control: no-cache' \
-  -d '{
-    "_language": "en",
-    
-    "selected_bank": {
-        "bank_code": "88888888",
-        "country_code": "DE"
-    },
-    
-    "_aspsp_access": "force_psd2",
-    "redirect_return_url": "http://localhost/auth",
-    
-    "psu": {
-        "ip_address": "127.0.0.1",
-        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36"
-    },
-    
-    "_keys": {
-        "hsm": "xxx",
-        "aspsp_data": "yyy"
-    }
-}'
-
-*/
+const token = Meteor.settings.kob.token;
 
 Meteor.methods({
   'kob.start_session'(client_id) {
     //
     let
       activeSessions = findActiveSessions(client_id);
-    // start a new session
+    //
     if (activeSessions.count()<1){
-      //
-      console.debug("KOBSessions method kob.start_session: no active session found." );
+      // No active session found, starting a new session
+      console.debug("Method kob.start_session: start a new session." );
       //
       try {
         let
-          token = Meteor.settings.kob.token,
           result = HTTP.call(
             'PUT',
             'https://api.playground.openbanking.klarna.com/xs2a/v1/sessions',
@@ -88,33 +30,9 @@ Meteor.methods({
               }
             }
           );
-        /*
-
-        HTTP 201 Created
-        {
-            "data": {
-                "session_id": "9h92js1pv4uogde8nphcfrovr3qc9krc",
-                "session_id_short": "9H92JSPV",
-                "flows": {
-                    "balances": "https://api.playground.openbanking.klarna.com/xs2a/v1/sessions/9h92js1pv4uogde8nphcfrovr3qc9krc/flows/balances",
-                    "transfer": "https://api.playground.openbanking.klarna.com/xs2a/v1/sessions/9h92js1pv4uogde8nphcfrovr3qc9krc/flows/transfer",
-                    "account_details": "https://api.playground.openbanking.klarna.com/xs2a/v1/sessions/9h92js1pv4uogde8nphcfrovr3qc9krc/flows/account-details",
-                    "accounts": "https://api.playground.openbanking.klarna.com/xs2a/v1/sessions/9h92js1pv4uogde8nphcfrovr3qc9krc/flows/accounts",
-                    "transactions": "https://api.playground.openbanking.klarna.com/xs2a/v1/sessions/9h92js1pv4uogde8nphcfrovr3qc9krc/flows/transactions"
-                },
-                "self": "https://api.playground.openbanking.klarna.com/xs2a/v1/sessions/9h92js1pv4uogde8nphcfrovr3qc9krc"
-            }
-        }
-
-        HTTP 400 Bad request
-        {
-            "error": {
-                "code": "badRequest",
-                "message": "Selected bank not allowed for this user"
-            }
-        }
-
-        */
+        //
+        console.debug(result.data);
+        //
         if (result.statusCode == 201){
           // Success
           let
@@ -129,7 +47,7 @@ Meteor.methods({
           //
           KOBSessions.insert(sessionObject);
           //
-          console.debug("KOBSessions method kob.start_session: " + sessionId );
+          console.debug("Method kob.start_session: session created session_id: " + sessionId );
           //
           return sessionObject;
         }
@@ -147,53 +65,80 @@ Meteor.methods({
       }
     } else {
       //
-      console.debug("KOBSessions method kob.start_session: "+activeSessions.count()+" active sessions found." );
+      console.debug("Method kob.start_session: " + activeSessions.count() + " active sessions found session_id: " + activeSessions.fetch()[0].session_id );
       //
       return activeSessions.fetch()[0];
     }
   },
   'kob.start_flow'(client_id,session_id,flow) {
-    try {
-      let
-        token = Meteor.settings.kob.token,
-        activeSession = findActiveSessionById(client_id,session_id);
+    //
+    let activeSession = findActiveSessionById(client_id,session_id);
+    //
+    if (!activeSession) {
+      // No active session available
+      console.debug("Method kob.start_flow: no active session available.");
       //
-      console.debug(activeSession.flows);
+    } else if (activeSession && activeSession.flows.indexOf(flow) < 0) {
+      // Flow not available
+      console.debug("Method kob.start_flow: flow not available.");
       //
-      if (!activeSession) {
-        // No active session available
-        console.debug("KOBSessions method kob.start_flow: no active session available.");
-      } else if (activeSession && activeSession.flows.indexOf(flow) < 0) {
-        // Flow not available
-        console.debug("KOBSessions method kob.start_flow: flow not available.");
+    } else {
+      //
+      let activeFlow = findActiveFlow(client_id,session_id);
+      //
+      if (activeFlow==undefined){
+        //
+        console.debug("Method kob.start_flow: start a new flow.");
+        //
+        try {
+          result = HTTP.call(
+            'PUT',
+            'https://api.playground.openbanking.klarna.com/xs2a/v1/sessions/'+session_id+'/flows/'+flow,
+            {
+              headers: {
+                "Accept": "*/*",
+                "Authorization": "Bearer " + token,
+                "Content-Type": "application/json"
+              }
+            }
+          );
+          //
+          console.log(result);
+          //
+          if (result.statusCode == 201){
+            // Success
+            let
+              flowId = result.data.data.flow_id,
+              clientToken = result.data.data.client_token,
+              flowObject = {
+                "client_id": client_id,
+                "session_id": session_id,
+                "flow_id": flowId,
+                "flow": flow,
+                "client_token": result.data.data.client_token,
+                "created_at": (new Date()).getTime()
+              };
+            //
+            KOBFlows.insert(flowObject);
+            //
+            console.debug("Method kob.start_flow: " + flowId );
+            //
+            return flowObject;
+          } else {
+            return -1;
+          }
+        } catch(e) {
+          // Error: failed [409] {"error":{"code":"CONFLICT","message":"A new flow cannot be started for session with the provided id as long as there is a running flow"}}
+          console.debug("Error: " + e);
+          //
+          throw(e);
+        }
       } else {
         //
-        result = HTTP.call(
-          'PUT',
-          'https://api.playground.openbanking.klarna.com/xs2a/v1/sessions/'+session_id+'/flows/'+flow,
-          {
-            headers: {
-              "Accept": "*/*",
-              "Authorization": "Bearer " + token,
-              "Content-Type": "application/json"
-            }
-          }
-        );
+        console.debug("Method kob.start_session: active flow found flow_id: " + activeFlow.flow_id );
         //
-        console.log(result);
-        //
-        if (result.statusCode == 201){
-          return {
-            'session_id': session_id,
-            'flow_id': result.data.data.flow_id,
-            'client_token': result.data.data.client_token
-          };
-        } else {
-          return -1;
-        }
+        return activeFlow;
       }
-    } catch(e){
-      throw(e);
     }
   }
 });

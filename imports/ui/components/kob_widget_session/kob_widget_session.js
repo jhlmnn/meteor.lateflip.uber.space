@@ -87,6 +87,7 @@ Template.kob_widget_session.events({
     if (KOB_flow==undefined){
       // No flow selected
       alert("No flow selected");
+      return -1;
     }
     //
     try {
@@ -94,8 +95,6 @@ Template.kob_widget_session.events({
       // Start flow
       //
       Meteor.call('kob.start_flow',Session.get("client_id"),KOB_sessionId,KOB_flow, (error,result) => {
-        let
-          KOB_sessionObject = result;
         //
         console.log(result);
         //
@@ -108,6 +107,31 @@ Template.kob_widget_session.events({
           }
         );*/
       });
+    } catch (e) {
+      console.log(e);
+    }
+  },
+  'click button.kob_start'(event, instance) {
+    //
+    let
+      KOB_client_token = instance.client_token.get(),
+      KOB_flow = Session.get("selected_flow");
+    //
+    if (KOB_flow==undefined){
+      // No flow selected
+      alert("No flow selected");
+    }
+    //
+    try {
+      //
+      // Start flow
+      //
+      window.XS2A.startFlow(
+        KOB_client_token,
+        {
+          onLoad: () => { console.log('onLoad called #2') }
+        }
+      );
     } catch (e) {
       console.log(e);
     }
