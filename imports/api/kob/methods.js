@@ -8,19 +8,25 @@ import { KOBFlows } from './kob_flows.collection.js';
 const session_life_time_seconds = 60 * 30; // 30 minutes
 
 function findActiveSessions(client_id){
+  //
+  console.debug("findActiveSessions client_id:" + client_id);
+  //
   return KOBSessions.find({
-    client_id: client_id,
+    'client_id': client_id,
     // created_at > (now - session_life_time_seconds)
-    created_at: { $gt: (new Date()).getTime() - (1000 * session_life_time_seconds) }
+    'created_at': { $gt: (new Date()).getTime() - (1000 * session_life_time_seconds) }
   });
 }
 
 function findActiveSessionById(client_id,session_id){
+  //
+  console.debug("findActiveSessionById client_id:" + client_id + " session_id:" + session_id);
+  //
   return KOBSessions.findOne({
-    client_id: client_id,
-    session_id: session_id,
+    'client_id': client_id,
+    'session_id': session_id,
     // created_at > (now - session_life_time_seconds)
-    created_at: { $gt: (new Date()).getTime() - (1000 * session_life_time_seconds) }
+    'created_at': { $gt: (new Date()).getTime() - (1000 * session_life_time_seconds) }
   });
 }
 
@@ -72,16 +78,16 @@ Meteor.methods({
         let
           token = Meteor.settings.kob.token,
           result = HTTP.call(
-          'PUT',
-          'https://api.playground.openbanking.klarna.com/xs2a/v1/sessions',
-          {
-            headers: {
-              "Accept": "*/*",
-              "Authorization": "Bearer " + token,
-              "Content-Type": "application/json"
+            'PUT',
+            'https://api.playground.openbanking.klarna.com/xs2a/v1/sessions',
+            {
+              headers: {
+                "Accept": "*/*",
+                "Authorization": "Bearer " + token,
+                "Content-Type": "application/json"
+              }
             }
-          }
-        );
+          );
         /*
 
         HTTP 201 Created
@@ -109,7 +115,6 @@ Meteor.methods({
         }
 
         */
-
         if (result.statusCode == 201){
           // Success
           let
@@ -153,7 +158,7 @@ Meteor.methods({
         token = Meteor.settings.kob.token,
         activeSession = findActiveSessionById(client_id,session_id);
       //
-      console.log(activeSession);
+      console.debug(activeSession.flows);
       //
       if (!activeSession) {
         // No active session available
@@ -174,6 +179,8 @@ Meteor.methods({
             }
           }
         );
+        //
+        console.log(result);
         //
         if (result.statusCode == 201){
           return {

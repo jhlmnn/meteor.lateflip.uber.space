@@ -63,7 +63,7 @@ Template.kob_widget_session.events({
     try {
       Meteor.call('kob.start_session',Session.get("client_id"), (error,result) => {
         let
-          KOB_sessionObject = result;
+          KOB_sessionObject = result,
           KOB_sessionId = result.session_id;
         //
         console.log(result);
@@ -81,11 +81,12 @@ Template.kob_widget_session.events({
   'click button.kob_flow'(event, instance) {
     //
     let
-      KOB_sessionId = instance.kob_session.get(),
+      KOB_sessionId = instance.session_id.get(),
       KOB_flow = Session.get("selected_flow");
     //
     if (KOB_flow==undefined){
       // No flow selected
+      alert("No flow selected");
     }
     //
     try {
@@ -95,7 +96,6 @@ Template.kob_widget_session.events({
       Meteor.call('kob.start_flow',Session.get("client_id"),KOB_sessionId,KOB_flow, (error,result) => {
         let
           KOB_sessionObject = result;
-          KOB_sessionId = result.session_id;
         //
         console.log(result);
         //
