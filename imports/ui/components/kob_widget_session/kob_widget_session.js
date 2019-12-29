@@ -2,15 +2,20 @@ import './kob_widget_session.html';
 import '../../stylesheets/body.css';
 
 Template.kob_widget_session.onCreated(function kob_widget_sessionOnCreated() {
+  //
+  //
+  //
+  console.debug("kob_widget_sessionOnCreated()");
+  //
   this.session_id = new ReactiveVar('(no session available)');
   this.client_token = new ReactiveVar('(no session available)');
   this.kob_session = new ReactiveVar('(no session available)');
   //
-  //
-  //
-  window.onXS2AReady = (XS2A) => {
+  var configureXS2A = function(XS2A){
     // configure once for all flows (optional)
-    window.XS2A.configure({
+    console.debug("XS2A: configure once for all flows.");
+    //
+    XS2A.configure({
       autoClose: true,
       hideTransitionOnFlowEnd: true,
       onLoad: () => {
@@ -31,8 +36,14 @@ Template.kob_widget_session.onCreated(function kob_widget_sessionOnCreated() {
       onClose: () => {
           console.log('onClose called')
       }
-    })
+    });
   };
+  //
+  if (window.XS2A) {
+    configureXS2A(window.XS2A);
+  } else {
+    window.onXS2AReady = (XS2A) => { configureXS2A(XS2A) };
+  }
   //
   //
   //
@@ -58,7 +69,7 @@ Template.kob_widget_session.events({
     localStorage.removeItem("client_id");
     Session.set("client_id","");
   },
-  'click button.kob_session'(event, instance) {
+  'click button.kob_init_session'(event, instance) {
     //
     try {
       Meteor.call('kob.start_session',Session.get("client_id"), (error,result) => {
@@ -78,7 +89,7 @@ Template.kob_widget_session.events({
     }
     //
   },
-  'click button.kob_flow'(event, instance) {
+  'click button.kob_init_flow'(event, instance) {
     //
     let
       KOB_sessionId = instance.session_id.get(),
@@ -92,26 +103,19 @@ Template.kob_widget_session.events({
     //
     try {
       //
-      // Start flow
+      // Save the client_token
       //
       Meteor.call('kob.start_flow',Session.get("client_id"),KOB_sessionId,KOB_flow, (error,result) => {
         //
         console.log(result);
         //
         instance.client_token.set(result.client_token);
-        // override parts of the configuration just for this flow
-        /*window.XS2A.startFlow(
-          instance.client_token.get(),
-          {
-            onLoad: () => { console.log('onLoad called #2') }
-          }
-        );*/
       });
     } catch (e) {
       console.log(e);
     }
   },
-  'click button.kob_start'(event, instance) {
+  'click button.kob_start_flow'(event, instance) {
     //
     let
       KOB_client_token = instance.client_token.get(),
@@ -120,18 +124,16 @@ Template.kob_widget_session.events({
     if (KOB_flow==undefined){
       // No flow selected
       alert("No flow selected");
+      return -1;
     }
+    //
+    console.debug("KOB start flow: " + KOB_flow );
     //
     try {
       //
       // Start flow
       //
-      window.XS2A.startFlow(
-        KOB_client_token,
-        {
-          onLoad: () => { console.log('onLoad called #2') }
-        }
-      );
+      window.XS2A.startFlow(KOB_client_token);
     } catch (e) {
       console.log(e);
     }

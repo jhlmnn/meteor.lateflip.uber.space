@@ -1,15 +1,15 @@
 <template name="kob_widget_session">
-  <button class="kob_session">Start KOB Session</button>
-  <button class="kob_flow">Start KOB Flow</button>
+  <button class="kob_init_session">Initiate KOB Session</button>
+  <button class="kob_init_flow">Initiate KOB Flow</button>
   <select name="flow">
     <option selected value="">(none)</option>
     {{#each flow in kob_session.flows}}
     <option value="{{flow}}">{{flow}}</option>
     {{/each}}
   </select>
-  <button class="kob_start">Start</button>
+  <button class="kob_start_flow">Start</button>
   <button class="kob_delete_flow">Close flow</button>
-  <button class="kob_delete_session">Close flow</button>
+  <button class="kob_delete_session">Close Session</button>
   <div style="float:right">
     <button class="reset_client">Reset client id</button>
   </div>
